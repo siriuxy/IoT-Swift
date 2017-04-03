@@ -61,7 +61,9 @@ class ConnectionViewController: UIViewController, UITextViewDelegate {
 
                     self.logTextView.text = "Using certificate:\n\(certificateId!)\n\n\nClient ID:\n\(uuid)"
 
-                    tabBarViewController.viewControllers = [ self, self.publishViewController, self.subscribeViewController ]
+                    // this is where the stuff happened
+                    tabBarViewController.viewControllers = [ self.subscribeViewController, self, self.publishViewController ]
+                    tabBarViewController.selectedIndex = 0;
 
 
                 case .disconnected:
@@ -236,7 +238,7 @@ class ConnectionViewController: UIViewController, UITextViewDelegate {
         publishViewController = tabBarViewController.viewControllers![1]
         subscribeViewController = tabBarViewController.viewControllers![2]
         configurationViewController = tabBarViewController.viewControllers![3]
-
+    
         tabBarViewController.viewControllers = [ self, configurationViewController ]
         logTextView.resignFirstResponder()
 
