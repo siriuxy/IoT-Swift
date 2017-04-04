@@ -20,6 +20,7 @@ class PublishViewController: UIViewController {
 
     @IBOutlet weak var publishSlider: UISlider!
 
+    @IBOutlet weak var subscribedTemp: UIProgressView!
     override func viewDidLoad() {
         super.viewDidLoad()
     }
@@ -34,6 +35,48 @@ class PublishViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    var counter = 0;
+    override func viewWillAppear(_ animated: Bool) {
+        let iotDataManager = AWSIoTDataManager.default()
+        let tabBarViewController = tabBarController as! IoTSampleTabBarController
+        let topic = "temperature_feed";
+        print(topic)
+        iotDataManager.subscribe(toTopic: topic, qoS: .messageDeliveryAttemptedAtMostOnce, messageCallback: {
+            (payload) ->Void in
+            let stringValue = NSString(data: payload, encoding: String.Encoding.utf8.rawValue)!
+            
+            print("received: \(stringValue)")
+            DispatchQueue.main.async {
+                self.subscribedTemp.progress = stringValue.floatValue/55.0
+                if (stringValue.floatValue >= 30) {
+                    self.subscribedTemp.progressTintColor = UIColor.red;
+                    if self.counter >= 5 {
+                        self.showAlert();
+                    }
+                    else {
+                        self.counter += 1;
+                    }
+                }
+                else
+                {
+                    self.subscribedTemp.progressTintColor = UIColor.blue;
+                    self.counter = 0;
+                }
+            }
+        } )
+    }
+
+    func showAlert() {
+        // Initialize Alert View
+        let alertView = UIAlertView(title: "Alert", message: "Temperature hass been high for the last \(counter) seconds", delegate: self, cancelButtonTitle: "Dismiss")
+        
+        // Configure Alert View
+        alertView.tag = 1
+        
+        // Show Alert View
+        alertView.show()
+    }
+    
     @IBAction func sliderValueChanged(_ sender: UISlider) {
         print("\(sender.value)")
 
