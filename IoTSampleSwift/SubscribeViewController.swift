@@ -84,7 +84,7 @@ class SubscribeViewController: UIViewController, CLLocationManagerDelegate, MKMa
     }
     
     var prevLoc:CLLocation?
-    var counter = 7;
+    var counter = 2;
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         print("locMAnager");
         let userLocation:CLLocation = locations.last!
@@ -102,11 +102,30 @@ class SubscribeViewController: UIViewController, CLLocationManagerDelegate, MKMa
         if let oldCoord = prevLoc?.coordinate {
             if counter > 10 {
                 var area = [newCoord,oldCoord];
-                let polyline = MKPolyline(coordinates: &area, count: 2)
+                let polyline = MKPolyline(coordinates: area, count: 2)
                 mapView.add(polyline);
-                if counter%30 == 0{
-                let iotDataManager = AWSIoTDataManager.default()
-                iotDataManager.publishString("\(long),\(lat)", onTopic: "location", qoS:.messageDeliveryAttemptedAtMostOnce)
+                if counter%15 == 0{
+                    let iotDataManager = AWSIoTDataManager.default()
+                    iotDataManager.publishString("\(long),\(lat)", onTopic: "location", qoS:.messageDeliveryAttemptedAtMostOnce)
+                    let geoCoder = CLGeocoder()
+                    geoCoder.reverseGeocodeLocation(userLocation, completionHandler: {(placemarks, error) -> Void in
+                        if error != nil {
+                            print("Reverse geocoder failed with error" + (error?.localizedDescription)!)
+                            return
+                        }
+                        if (placemarks != nil) {
+                            for p in placemarks! {
+                                iotDataManager.publishString(p.compactAddress!, onTopic: "address", qoS:.messageDeliveryAttemptedAtMostOnce)
+
+                            }
+                        }
+//                        if (placemarks?.count)! > 0 {
+//                            print(placemarks![0].locality ?? "failed to fetch")
+//                        }
+//                        else {
+//                            print("Problem with the data received from geocoder")
+//                        }
+                    })
                 }
             }
         }
@@ -136,7 +155,21 @@ class SubscribeViewController: UIViewController, CLLocationManagerDelegate, MKMa
         })
     }
 
+    // https://cocoacasts.com/forward-and-reverse-geocoding-with-clgeocoder-part-2/
     
+    lazy var geocoder = CLGeocoder()
+    private func processResponse(withPlacemarks placemarks: [CLPlacemark]?, error: Error?) ->String {
+        // Update View
+        // geocodeButton.isHidden = false
+        // activityIndicatorView.stopAnimating()
+        
+            if let placemarks = placemarks, let placemark = placemarks.first {
+                return  placemark.compactAddress ?? ""
+            } else {
+                return  "No Matching Addresses Found"
+        }
+    }
+
     
     @IBAction func sliderValueChanged(_ sender: UISlider) {
         print("\(sender.value)")
@@ -174,4 +207,32 @@ class SubscribeViewController: UIViewController, CLLocationManagerDelegate, MKMa
         // Dispose of any resources that can be recreated.
     }
 }
+
+//https://cocoacasts.com/forward-and-reverse-geocoding-with-clgeocoder-part-2/
+extension CLPlacemark {
+    
+    var compactAddress: String? {
+        if let name = name {
+            var result = name
+            
+            if let street = thoroughfare {
+                result += ", \(street)"
+            }
+            
+            if let city = locality {
+                result += ", \(city)"
+            }
+            
+            if let country = country {
+                result += ", \(country)"
+            }
+            
+            return result
+        }
+        
+        return nil
+    }
+    
+}
+
 
