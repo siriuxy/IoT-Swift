@@ -31,6 +31,8 @@ class PublishViewController: UIViewController {
 
     }
 
+    @IBOutlet weak var tempLabel: UILabel!
+    var temp = -100.0;
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -47,29 +49,34 @@ class PublishViewController: UIViewController {
             
             print("received: \(stringValue)")
             DispatchQueue.main.async {
-                self.subscribedTemp.progress = stringValue.floatValue/55.0
-                if (stringValue.floatValue >= 30) {
+                self.subscribedTemp.progress = stringValue.floatValue/80.0
+                if (stringValue.floatValue <= -20){
+                    self.tempLabel.text = "waiting...";
+                }
+                else if (stringValue.floatValue >= 30) {
                     self.subscribedTemp.progressTintColor = UIColor.red;
                     if self.counter >= 5 {
                         self.showAlert();
                     }
-                    else {
                         self.counter += 1;
-                    }
+                    self.tempLabel.text = String(stringValue)+" Celsius";
                 }
                 else
                 {
                     self.subscribedTemp.progressTintColor = UIColor.blue;
                     self.counter = 0;
+                    self.tempLabel.text = String(stringValue)+" Celsius";
+                    self.alertView.dismiss(withClickedButtonIndex: -1, animated: true)
                 }
             }
         } )
     }
-
+    
+    var alertView = UIAlertView();
     func showAlert() {
         // Initialize Alert View
-        let alertView = UIAlertView(title: "Alert", message: "Temperature hass been high for the last \(counter) seconds", delegate: self, cancelButtonTitle: "Dismiss")
-        
+        alertView = UIAlertView(title: "Alert", message: "Temperature has been consistently high for the last \(counter) seconds", delegate: self, cancelButtonTitle: "Dismiss")
+
         // Configure Alert View
         alertView.tag = 1
         
